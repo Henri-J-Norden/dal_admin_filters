@@ -3,6 +3,7 @@ from dal import autocomplete, forward
 from django import forms
 from django.contrib.admin.filters import SimpleListFilter
 from django.forms.widgets import Media, MEDIA_TYPES, media_property
+from django.contrib.admin.utils import get_fields_from_path
 
 
 class AutocompleteFilter(SimpleListFilter):
@@ -54,7 +55,10 @@ class AutocompleteFilter(SimpleListFilter):
         )
 
     def get_queryset_for_field(self, model, name):
-        return getattr(model, name).get_queryset()
+        field = get_fields_from_path(model, name)[-1]
+        if field.is_relation:
+            return field.related_model.objects.all()
+        return field.model.objects.all()
 
     def _add_media(self, model_admin, widget):
 
