@@ -1,5 +1,5 @@
-(function ($) {
-    $(document).ready(function () {
+window.addEventListener("load", () => setTimeout(function() {
+    (function ($) {
         $('#changelist-filter').children().wrapAll('<form></form>'); // required for forward func
-    });
-})(django.jQuery);
+    })(django.jQuery);
+}, 10));
