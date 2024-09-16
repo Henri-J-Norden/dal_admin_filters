@@ -1,12 +1,12 @@
 # -*- encoding: utf-8 -*-
 from dal import autocomplete, forward
 from django import forms
-from django.contrib.admin.filters import SimpleListFilter
+from django.contrib.admin.filters import ListFilter, SimpleListFilter, FieldListFilter
 from django.forms.widgets import Media, MEDIA_TYPES, media_property
 from django.contrib.admin.utils import get_fields_from_path
 
 
-class AutocompleteFilter(SimpleListFilter):
+class AutocompleteFilterMixin(ListFilter):
     template = "dal_admin_filters/autocomplete-filter.html"
     title = ''
     field_name = ''
@@ -16,6 +16,7 @@ class AutocompleteFilter(SimpleListFilter):
     is_placeholder_title = False
     widget_attrs = {}
     forwards = []
+    parameter_name = None
 
     class Media:
         css = {
@@ -28,13 +29,14 @@ class AutocompleteFilter(SimpleListFilter):
             'dal_admin_filters/js/querystring.js',
         )
 
-    def __init__(self, request, params, model, model_admin):
+    def __init__(self, *args, **kwargs):
         if self.parameter_name is None:
             self.parameter_name = self.field_name
             if self.use_pk_exact:
                 self.parameter_name += '__{}__exact'.format(self.field_pk)
-        super(AutocompleteFilter, self).__init__(request, params, model, model_admin)
+        super().__init__(*args, **kwargs)
 
+    def _init_autocomplete(self, request, params, model, model_admin):
         widget = self.get_widget(request)
 
         self._add_media(model_admin, widget)
@@ -56,6 +58,9 @@ class AutocompleteFilter(SimpleListFilter):
 
     def get_queryset_for_field(self, model, name):
         field = get_fields_from_path(model, name)[-1]
+        return self.get_queryset_for_field_obj(field)
+
+    def get_queryset_for_field_obj(self, field):
         if field.is_relation:
             return field.related_model.objects.all()
         return field.model.objects.all()
@@ -90,6 +95,12 @@ class AutocompleteFilter(SimpleListFilter):
     def get_autocomplete_url(self, request):
         return self.autocomplete_url
 
+
+class AutocompleteFilter(AutocompleteFilterMixin, SimpleListFilter):
+    def __init__(self, request, params, model, model_admin):
+        super(AutocompleteFilter, self).__init__(request, params, model, model_admin)
+        self._init_autocomplete(request, params, model, model_admin)
+
     def has_output(self):
         return True
 
@@ -101,3 +112,19 @@ class AutocompleteFilter(SimpleListFilter):
             return queryset.filter(**{self.parameter_name: self.value()})
         else:
             return queryset
+
+
+class AutocompleteFieldFilter(AutocompleteFilterMixin, FieldListFilter):
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        self.field_name = field_path
+        super().__init__(field, request, params, model, model_admin, field_path)
+        self._init_autocomplete(request, params, model, model_admin)
+
+    def get_queryset_for_field(self, model, name):
+        return self.get_queryset_for_field_obj(self.field)
+
+    def expected_parameters(self):
+        return [self.parameter_name]
+
+    def choices(self, changelist):
+        return ()
