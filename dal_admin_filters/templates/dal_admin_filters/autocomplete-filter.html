@@ -12,7 +12,16 @@
                 'change',
                 function (e, choice) {
                     var val = $(e.target).val() || '';
-                    window.location.search = search_replace('{{ spec.parameter_name }}', val);
+                    if (val)
+                    {
+                        window.location.search = search_replace('{{ spec.parameter_name }}', val);
+                    }
+                    else
+                    {
+                        let hash = search_to_hash();
+                        delete hash['{{ spec.parameter_name }}'];
+                        window.location.search = hash_to_search(hash);
+                    }
                 });
         });
     })(django.jQuery);
