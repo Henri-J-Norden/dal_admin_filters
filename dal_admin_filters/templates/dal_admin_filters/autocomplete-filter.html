@@ -2,8 +2,13 @@
 {% if not spec.is_placeholder_title %}
     <h3>{% blocktrans with filter_title=title %} By {{ filter_title }} {% endblocktrans %}</h3>
 {% endif %}
-    <ul>
+    <ul style="display: flex; flex-wrap: wrap; justify-content: space-around; gap: 5px;">
         <li>{{ spec.rendered_widget }}</li>
+
+        {% for choice in choices %}
+            <li{% if choice.selected %} class="selected"{% endif %}>
+            <a href="{{ choice.query_string|iriencode }}">{{ choice.display }}</a></li>
+        {% endfor %}
     </ul>
 <script>
     (function($) {
@@ -11,18 +16,19 @@
             $('#changelist-filter select[name={{ spec.parameter_name }}]').on(
                 'change',
                 function (e, choice) {
+                    let hash = search_to_hash();
+                    {% if spec.lookup_kwarg %}delete hash['{{ spec.lookup_kwarg }}'];{% endif %}
+
                     var val = $(e.target).val() || '';
-                    if (val)
-                    {
-                        window.location.search = search_replace('{{ spec.parameter_name }}', val);
-                    }
-                    else
-                    {
-                        let hash = search_to_hash();
+                    if (val) {
+                        hash['{{ spec.parameter_name }}'] = [val];
+                    } else {
                         delete hash['{{ spec.parameter_name }}'];
-                        window.location.search = hash_to_search(hash);
                     }
+
+                    window.location.search = hash_to_search(hash);
                 });
         });
     })(django.jQuery);
 </script>
+
