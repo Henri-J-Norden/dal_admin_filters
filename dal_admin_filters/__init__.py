@@ -132,7 +132,6 @@ class AutocompleteFieldFilter(AutocompleteFilterMixin, FieldListFilter):
 
 
 class AutocompleteEmptyFieldFilter(AutocompleteFilterMixin, EmptyFieldListFilter):
-    title_override: bool | str = True
     null_override: bool | None = None
     empty_strings_allowed_override: bool | None = None
     empty: bool = True
@@ -154,11 +153,6 @@ class AutocompleteEmptyFieldFilter(AutocompleteFilterMixin, EmptyFieldListFilter
 
         if not self.empty:
             field.null = prev_field_null
-
-        if isinstance(self.title_override, str):
-            self.title = self.title_override
-        elif self.title_override:
-            self.title = field_path.replace("__", " ").replace("_", " ")
 
     def value(self):
         val = self.used_parameters.get(self.parameter_name)
